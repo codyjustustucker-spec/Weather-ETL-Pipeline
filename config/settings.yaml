@@ -1,0 +1,6 @@
+
+
+api_base_url: "https://api.open-meteo.com/v1/forecast"
+api_timeout: 10
+latitude: 0
+longitude: 0
