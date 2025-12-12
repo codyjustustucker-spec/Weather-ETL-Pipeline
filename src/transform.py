@@ -1,41 +1,59 @@
 import pandas as pd
 from datetime import datetime, UTC
 from src.logger import logger
+from src.backend_client import record_event
 
 datetime.now(UTC)
 
 
 def hourly_to_df(data: dict, latitude: float, longitude: float) -> pd.DataFrame:
-    """Raw API JSON -> clean hourly DataFrame."""
+    run_id = record_event(stage="transform", event="start")
+
     try:
+        # ---- transform logic ----
         h = data["hourly"]
         times = h["time"]
-    except KeyError as e:
-        logger.error(f"hourly_to_df: missing keys → {e}")
+        n = len(times)
+
+        def column(key: str):
+            values = h.get(key)
+            if values is None:
+                return [None] * n
+            values = list(values)
+            if len(values) < n:
+                values += [None] * (n - len(values))
+            return values[:n]
+
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.to_datetime(times),
+                "latitude": [latitude] * n,
+                "longitude": [longitude] * n,
+                "temperature_c": column("temperature_2m"),
+                "relative_humidity": column("relativehumidity_2m"),
+                "precipitation_mm": column("precipitation"),
+                "weather_code": column("weathercode"),
+            }
+        )
+
+        df["ingestion_date"] = datetime.now(UTC).date().isoformat()
+
+        # ---- success telemetry ----
+        record_event(
+            run_id=run_id,
+            stage="transform",
+            event="success",
+            payload={"rows": len(df)}
+        )
+
+        return df
+
+    except Exception as e:
+        record_event(
+            run_id=run_id,
+            stage="transform",
+            event="fail",
+            level="error",
+            payload={"error": str(e)}
+        )
         raise
-
-    n = len(times)
-
-    def column(key: str):
-        values = h.get(key)
-        if values is None:
-            return [None] * n
-        values = list(values)
-        if len(values) < n:
-            values += [None] * (n - len(values))
-        return values[:n]
-
-    df = pd.DataFrame(
-        {
-            "timestamp": pd.to_datetime(times),
-            "latitude": [latitude] * n,
-            "longitude": [longitude] * n,
-            "temperature_c": column("temperature_2m"),
-            "relative_humidity": column("relativehumidity_2m"),
-            "precipitation_mm": column("precipitation"),
-            "weather_code": column("weathercode"),
-        }
-    )
-
-    df["ingestion_date"] = datetime.now(UTC).date().isoformat()
-    return df

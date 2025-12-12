@@ -4,6 +4,7 @@ from src.transform import hourly_to_df
 from src.config_loader import load_config
 from src.logger import logger
 from src.summarize import write_daily_summary
+from src.backend_client import send_events_to_backend
 
 config = load_config()
 
@@ -17,6 +18,15 @@ def main():
     df = hourly_to_df(data, config.latitude, config.longitude)
     load_hourly(df)                      # L (clean layer)
     write_daily_summary()
+
+    # Backend Logic -------------------------
+    result = send_events_to_backend(
+        backend_url="http://127.0.0.1:8000/etl/events"
+    )
+
+    if not result.get("cleared"):
+        logger.warning(f"telemetry not sent: {result}")
+    # -----------------------------------
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 import requests
 from src.logger import logger
+from src.backend_client import record_event
 
 
 def fetch_weather(config):
+    run_id = record_event(stage="extract", event="start")
+
     params = {
         "latitude": config.latitude,
         "longitude": config.longitude,
@@ -11,33 +14,45 @@ def fetch_weather(config):
     }
 
     try:
-        # --- API call ---
         response = requests.get(
             config.api_base_url,
             params=params,
             timeout=config.api_timeout
         )
-
-        # --- HTTP error? ---
         response.raise_for_status()
-
-        # --- JSON decode ---
         data = response.json()
 
-        logger.info(
-            f"extract: HTTP {response.status_code}, {len(data['hourly']['time'])} hourly records"
+        row_count = len(data["hourly"]["time"])
+
+        record_event(
+            run_id=run_id,
+            stage="extract",
+            event="success",
+            payload={"rows": row_count, "status_code": response.status_code}
         )
 
+        logger.info(
+            f"extract: HTTP {response.status_code}, {row_count} hourly records")
         return data
 
-    except requests.exceptions.Timeout:
-        logger.error("extract: timeout contacting API")
-        return None
+    except Exception as e:
+        record_event(
+            run_id=run_id,
+            stage="extract",
+            event="fail",
+            level="error",
+            payload={"error": str(e)}
+        )
 
-    except requests.exceptions.RequestException as e:
-        logger.error(f"extract: network/HTTP error → {e}")
-        return None
+        # keep your existing behavior:
+        if isinstance(e, requests.exceptions.Timeout):
+            logger.error("extract: timeout contacting API")
+            return None
+        if isinstance(e, requests.exceptions.RequestException):
+            logger.error(f"extract: network/HTTP error → {e}")
+            return None
+        if isinstance(e, ValueError):
+            logger.error(f"extract: JSON decode error → {e}")
+            return None
 
-    except ValueError as e:
-        logger.error(f"extract: JSON decode error → {e}")
-        return None
+        raise
