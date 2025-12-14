@@ -9,3 +9,4 @@ __pycache__/
 data/*.db
 data/telemetry/
 logs/*.log
+*.egg-info
