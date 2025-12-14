@@ -2,13 +2,15 @@ import sqlite3
 import pandas as pd
 import json
 import src.db as db
+import config
 from datetime import datetime
 from src.logger import logger
 from src.backend_client import record_event
 
 
-def save_raw(data: dict):
-    run_id = record_event(stage="load", event="start")
+def save_raw(data: dict, config):
+    run_id = record_event(system_id=config.LSO_SYSTEM_ID,
+                          stage="load", event="start")
 
     conn = None
     try:
@@ -24,6 +26,7 @@ def save_raw(data: dict):
         conn.commit()
 
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="load",
             event="success",
@@ -32,6 +35,7 @@ def save_raw(data: dict):
 
     except Exception as e:
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="load",
             event="fail",
@@ -45,8 +49,9 @@ def save_raw(data: dict):
             conn.close()
 
 
-def load_hourly(df: pd.DataFrame) -> None:
-    run_id = record_event(stage="load", event="start")
+def load_hourly(df: pd.DataFrame, config) -> None:
+    run_id = record_event(system_id=config.LSO_SYSTEM_ID,
+                          stage="load", event="start")
 
     conn = None
     try:
@@ -88,6 +93,7 @@ def load_hourly(df: pd.DataFrame) -> None:
         conn.commit()
 
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="load",
             event="success",
@@ -95,13 +101,13 @@ def load_hourly(df: pd.DataFrame) -> None:
         )
 
     except Exception as e:
-        record_event(
-            run_id=run_id,
-            stage="load",
-            event="fail",
-            level="error",
-            payload={"error": str(e)}
-        )
+        record_event(system_id=config.LSO_SYSTEM_ID,
+                     run_id=run_id,
+                     stage="load",
+                     event="fail",
+                     level="error",
+                     payload={"error": str(e)}
+                     )
         raise
 
     finally:

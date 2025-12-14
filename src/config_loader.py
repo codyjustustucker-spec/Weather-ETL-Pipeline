@@ -8,6 +8,8 @@ class Config:
         self.api_timeout = data["api_timeout"]
         self.latitude = data["latitude"]
         self.longitude = data["longitude"]
+        self.LSO_URL = data["LSO_URL"]
+        self.LSO_SYSTEM_ID = data["LSO_SYSTEM_ID"]
 
 
 def load_config():

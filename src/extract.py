@@ -4,7 +4,8 @@ from src.backend_client import record_event
 
 
 def fetch_weather(config):
-    run_id = record_event(stage="extract", event="start")
+    run_id = record_event(system_id=config.LSO_SYSTEM_ID,
+                          stage="extract", event="start")
 
     params = {
         "latitude": config.latitude,
@@ -25,6 +26,7 @@ def fetch_weather(config):
         row_count = len(data["hourly"]["time"])
 
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="extract",
             event="success",
@@ -37,6 +39,7 @@ def fetch_weather(config):
 
     except Exception as e:
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="extract",
             event="fail",

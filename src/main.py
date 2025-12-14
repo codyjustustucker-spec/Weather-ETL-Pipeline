@@ -14,15 +14,17 @@ def main():
     if data is None:
         logger.error("main: extract failed, aborting")
         raise SystemExit(1)
-    save_raw(data)                         # T (raw layer)
-    df = hourly_to_df(data, config.latitude, config.longitude)
-    load_hourly(df)                      # L (clean layer)
+    save_raw(data, config)                         # T (raw layer)
+    df = hourly_to_df(data, config.latitude, config.longitude, config)
+    load_hourly(df, config)                      # L (clean layer)
     write_daily_summary()
 
     # Backend Logic -------------------------
     result = send_events_to_backend(
-        backend_url="http://127.0.0.1:8000/etl/events"
+        backend_url=f"http://127.0.0.1:8000/systems/{config.LSO_SYSTEM_ID}/events"
+
     )
+    print(result)
 
     if not result.get("cleared"):
         logger.warning(f"telemetry not sent: {result}")

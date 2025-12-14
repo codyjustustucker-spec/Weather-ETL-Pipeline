@@ -1,4 +1,5 @@
 import pandas as pd
+import config
 from datetime import datetime, UTC
 from src.logger import logger
 from src.backend_client import record_event
@@ -6,8 +7,9 @@ from src.backend_client import record_event
 datetime.now(UTC)
 
 
-def hourly_to_df(data: dict, latitude: float, longitude: float) -> pd.DataFrame:
-    run_id = record_event(stage="transform", event="start")
+def hourly_to_df(data: dict, latitude: float, longitude: float, config) -> pd.DataFrame:
+    run_id = record_event(system_id=config.LSO_SYSTEM_ID,
+                          stage="transform", event="start")
 
     try:
         # ---- transform logic ----
@@ -40,6 +42,7 @@ def hourly_to_df(data: dict, latitude: float, longitude: float) -> pd.DataFrame:
 
         # ---- success telemetry ----
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="transform",
             event="success",
@@ -50,6 +53,7 @@ def hourly_to_df(data: dict, latitude: float, longitude: float) -> pd.DataFrame:
 
     except Exception as e:
         record_event(
+            system_id=config.LSO_SYSTEM_ID,
             run_id=run_id,
             stage="transform",
             event="fail",

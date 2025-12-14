@@ -15,10 +15,11 @@ import requests
 
 def record_event(
     *,
-    store_path: str = "data/telemetry/events.jsonl",
-    run_id: Optional[str] = None,
+    system_id: int,
     stage: str,
     event: str,
+    store_path: str = "data/telemetry/events.jsonl",
+    run_id: Optional[str] = None,
     payload: Optional[Dict[str, Any]] = None,
     level: str = "info",
 ) -> str:
@@ -26,11 +27,18 @@ def record_event(
     os.makedirs(os.path.dirname(store_path), exist_ok=True)
 
     rid = run_id or str(uuid.uuid4())
+
+    status = "error" if event == "fail" else "ok"
+
     doc = {
+        "system_id": int(system_id),
         "ts": datetime.now(timezone.utc).isoformat(),
         "run_id": rid,
         "stage": stage,         # e.g. "extract" | "transform" | "load"
-        "event": event,         # e.g. "start" | "success" | "fail" | "counts"
+        "event_type": event,
+        # e.g. "start" | "success" | "fail" | "counts"
+        "status": status,
+        "latency_ms": 0,
         "level": level,         # "info" | "warn" | "error"
         "payload": payload or {},
     }
@@ -99,12 +107,3 @@ def send_events_to_backend(
             time.sleep(backoff_s * (2**attempt))
 
     return {"sent": 0, "cleared": False, "error": last_err}
-
-
-"""
- ---- tiny usage pattern (copy into your extract/transform/load) ----
- run_id = record_event(stage="extract", event="start")
- record_event(run_id=run_id, stage="extract", event="counts", payload={"rows": 123})
- record_event(run_id=run_id, stage="extract", event="success")
- send_events_to_backend(backend_url="http://127.0.0.1:8000/etl/events")
-"""
