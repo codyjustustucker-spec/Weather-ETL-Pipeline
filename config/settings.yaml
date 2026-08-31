@@ -5,6 +5,7 @@ api_timeout: 10
 latitude: 46.15
 longitude: -67.60
 
-# Backend integration
-LSO_URL: http://127.0.0.1:8000 
+# Optional LSO backend integration
+LSO_ENABLED: false
+LSO_URL: http://127.0.0.1:8000
 LSO_SYSTEM_ID: 3
